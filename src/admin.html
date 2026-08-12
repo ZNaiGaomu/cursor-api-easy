@@ -229,7 +229,7 @@
         };
         const data = await api("/admin/api/keys", { method: "POST", body: JSON.stringify(payload) });
         flash($("create-msg"), "ok",
-          `已创建。完整 Key 只显示这一次。本机 <span class="mono">http://localhost:3000/v1</span> 和公网 <span class="mono">https://api.gaomuxipian.com/v1</span> 都用这一把：<div class="secret mono">${data.key}</div>`);
+          `已创建。本机和公网都用这一把，可在列表里再次复制：<div class="secret mono">${data.key}</div>`);
         $("name").value = "";
         $("limit").value = "";
         $("note").value = "";
@@ -273,6 +273,21 @@
           <td class="actions"></td>
         `;
         const actions = tr.querySelector(".actions");
+        const copy = document.createElement("button");
+        copy.className = "ghost";
+        copy.textContent = key.token ? "复制 Key" : "无法复制";
+        copy.disabled = !key.token;
+        copy.title = key.token ? "复制完整 Key" : "旧 Key 未保存明文，请删除后重新生成";
+        copy.onclick = async () => {
+          if (!key.token) return;
+          try {
+            await navigator.clipboard.writeText(key.token);
+            copy.textContent = "已复制";
+            setTimeout(() => { copy.textContent = "复制 Key"; }, 1200);
+          } catch {
+            prompt("复制下面的 Key", key.token);
+          }
+        };
         const toggle = document.createElement("button");
         toggle.className = "ghost";
         toggle.textContent = key.enabled ? "停用" : "启用";
@@ -290,7 +305,7 @@
         del.className = "danger";
         del.textContent = "删除";
         del.onclick = () => removeKey(key.id);
-        actions.append(toggle, quotaBtn, del);
+        actions.append(copy, toggle, quotaBtn, del);
         rows.appendChild(tr);
       }
     }

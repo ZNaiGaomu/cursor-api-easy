@@ -10,6 +10,7 @@ export interface StoredApiKey {
   id: string;
   name: string;
   keyHash: string;
+  token?: string;
   suffix: string;
   enabled: boolean;
   createdAt: number;
@@ -24,6 +25,7 @@ export interface ApiKeyPublic {
   id: string;
   name: string;
   suffix: string;
+  token: string | null;
   enabled: boolean;
   createdAt: number;
   lastUsedAt: number | null;
@@ -75,6 +77,7 @@ function toPublic(key: StoredApiKey): ApiKeyPublic {
     id: key.id,
     name: key.name,
     suffix: key.suffix,
+    token: key.token || null,
     enabled: key.enabled,
     createdAt: key.createdAt,
     lastUsedAt: key.lastUsedAt,
@@ -106,6 +109,7 @@ export function createApiKey(input: {
     id: randomBytes(8).toString("hex"),
     name,
     keyHash: hashApiKey(raw),
+    token: raw,
     suffix: raw.slice(-4),
     enabled: true,
     createdAt: Date.now(),
