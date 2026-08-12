@@ -77,12 +77,23 @@
       word-break: break-all;
     }
     .actions button { margin: 0 6px 6px 0; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 8px 0 0; }
+    .url-box {
+      background: #10131a;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 10px;
+    }
+    .url-box .k { color: var(--muted); font-size: 12px; }
+    .url-box .v { margin: 2px 0 10px; }
+    .url-box .v:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>cursor-api-easy 管理台</h1>
-    <p class="sub">统一 URL，多把 API Key。没有你发放的 Key，无法调用接口。</p>
+    <p class="sub">本地和公网是同一套服务。调用时都必须带你发放的那把 Key，不是随便填。</p>
 
     <div id="login-card" class="card">
       <h2>管理员登录</h2>
@@ -96,16 +107,31 @@
 
     <div id="app" class="hidden">
       <div class="card">
+        <h2>怎么填</h2>
+        <p class="hint">
+          本机测试用左边本地地址；发给别人用右边公网地址。
+          <strong>两套地址都要 Key</strong>，而且是同一把（在下面生成）。
+          没有对应 Key，本地和公网都调不通。
+        </p>
         <div class="row">
-          <div>
-            <div class="sub">对外 API</div>
-            <div class="mono" id="api-url">/v1</div>
+          <div class="url-box">
+            <div class="k">本机 API（仅这台电脑）</div>
+            <div class="v mono" id="local-api">http://localhost:3000/v1</div>
+            <div class="k">本机管理页</div>
+            <div class="v mono" id="local-admin">http://localhost:3000/admin</div>
           </div>
-          <div>
-            <div class="sub">管理页</div>
-            <div class="mono">/admin</div>
+          <div class="url-box">
+            <div class="k">公网 API（跨电脑）</div>
+            <div class="v mono" id="public-api">https://api.gaomuxipian.com/v1</div>
+            <div class="k">公网管理页</div>
+            <div class="v mono" id="public-admin">https://api.gaomuxipian.com/admin</div>
           </div>
         </div>
+        <p class="hint">
+          客户端统一填：<span class="mono">Base URL</span> 选上面其中一个
+          <span class="mono">/v1</span>，<span class="mono">API Key</span> 填你生成的
+          <span class="mono">sk-...</span>。
+        </p>
       </div>
 
       <div class="card">
@@ -179,7 +205,10 @@
         await api("/admin/api/keys");
         $("login-card").classList.add("hidden");
         $("app").classList.remove("hidden");
-        $("api-url").textContent = location.origin + "/v1";
+        $("local-api").textContent = "http://localhost:3000/v1";
+        $("local-admin").textContent = "http://localhost:3000/admin";
+        $("public-api").textContent = "https://api.gaomuxipian.com/v1";
+        $("public-admin").textContent = "https://api.gaomuxipian.com/admin";
         await refresh();
       } catch (err) {
         flash($("login-msg"), "err", err.message);
@@ -200,7 +229,7 @@
         };
         const data = await api("/admin/api/keys", { method: "POST", body: JSON.stringify(payload) });
         flash($("create-msg"), "ok",
-          `已创建。完整 Key 只显示这一次，请立刻复制发给使用者：<div class="secret mono">${data.key}</div>`);
+          `已创建。完整 Key 只显示这一次。本机 <span class="mono">http://localhost:3000/v1</span> 和公网 <span class="mono">https://api.gaomuxipian.com/v1</span> 都用这一把：<div class="secret mono">${data.key}</div>`);
         $("name").value = "";
         $("limit").value = "";
         $("note").value = "";
