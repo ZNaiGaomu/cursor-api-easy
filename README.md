@@ -1,18 +1,23 @@
 # cursor-api-easy
 
-把 Cursor 账号里的模型，变成本地 OpenAI 兼容接口。  
-登录你自己的 Cursor 后，就能在任意支持自定义 OpenAI 接口的客户端里使用。
+把 Cursor 账号里的模型，变成 OpenAI 兼容接口。  
+登录你自己的 Cursor 后，在管理页发放 Key，别人用统一 URL + 你给的 Key 即可调用。
+
+当前版本：**v0.2.0**
 
 ## 功能
 
 - 浏览器 OAuth 登录自己的 Cursor 账号
-- 本地 `OpenAI Chat Completions` 兼容接口
+- `OpenAI Chat Completions` 兼容接口
 - 自动拉取账号可用模型列表
 - 支持流式输出与工具调用
-- 多把可管理 API Key，统一 URL
-- 浏览器管理页：创建 / 停用 / 删除 Key，可选额度
+- 浏览器管理页：创建 / 停用 / 删除 / 复制 Key
+- 多把 Key，统一 URL；没有对应 Key 无法调用
+- 额度可选：不填 = 不限额；填次数后用尽即拒绝
+- 可设置过期时间
 - Windows / macOS / Linux
 - 可选本地代理出口（需自行配置）
+- 可用 Cloudflare Tunnel 把本机服务挂到自己的子域名
 
 ## 使用方法
 
@@ -33,7 +38,7 @@ bun install
 bun run build
 ```
 
-**Release 预构建包：** 解压后进入目录，无需再 build。
+**Release 预构建包：** 下载 `cursor-api-easy-v0.2.0.zip`，解压后进入目录，无需再 build。
 
 ### 3. 登录自己的 Cursor
 
@@ -47,39 +52,56 @@ bun run dist/cli.js login
 ~/.config/cursor-openai-api/credentials.json
 ```
 
-仓库和 Release **不包含任何账号或 token**。
+仓库和 Release **不包含任何账号、管理员密码或 token**。
 
 ### 4. 启动
 
 Windows：双击 `start.bat`，或：
 
 ```bat
-bun run dist/cli.js serve
+set ADMIN_PASSWORD=你自己的管理密码
+start.bat
 ```
 
 macOS / Linux：
 
 ```bash
+export ADMIN_PASSWORD=你自己的管理密码
 chmod +x start.sh
 ./start.sh
 ```
 
-默认地址：
+未设置 `ADMIN_PASSWORD` 时，首次启动会生成管理员密码并打印在终端。
+
+### 5. 管理页发放 Key
+
+打开：
 
 ```text
-管理页:    http://localhost:3000/admin
-Base URL:  http://localhost:3000/v1
-API Key:   在管理页生成后发给使用者，不再接受任意字符串
+http://localhost:3000/admin
 ```
 
-第一次启动若未设置 `ADMIN_PASSWORD`，程序会生成管理员密码并打印在终端。  
-打开管理页，用该密码登录，再创建 Key。完整 Key 只显示一次。
+用管理员密码登录后：
 
-客户端（ChatBox、LobeChat、Codex++、OpenAI SDK 等）填：
+1. 填写名称，可选填额度、过期时间
+2. 点「生成 Key」
+3. 在列表里点「复制 Key」发给使用者
+
+本机和公网是同一套服务、**同一把 Key**。  
+本地 `http://localhost:3000/v1` 也必须带这把 Key，不能再随便填。
+
+旧版（v0.1）之前生成、未保存明文的 Key，列表里会显示「无法复制」，需要删除后重新生成。
+
+### 6. 客户端怎么填
 
 ```text
-Base URL: https://你的子域名/v1   （本机测试用 http://localhost:3000/v1）
-API Key:  你发放的 sk-...
+本机:
+  Base URL:  http://localhost:3000/v1
+  API Key:   管理页生成的 sk-...
+
+公网（配好域名后）:
+  Base URL:  https://你的子域名/v1
+  API Key:   同一把 sk-...
 ```
 
 API 格式请选 **OpenAI Chat Completions**，不要选 Responses API / Anthropic。
@@ -95,31 +117,18 @@ const client = new OpenAI({
 
 ## Key 与额度
 
-- 每把 Key 可单独启用 / 停用 / 删除
-- 额度可选：不填 = 不限额；填写次数后用尽即拒绝
+- 每把 Key 可单独启用 / 停用 / 删除 / 复制
+- 额度可选：不填 = 不限额；填写次数后用尽返回 429
 - 可设置过期时间
 - Cursor 登录凭证只留在你这台电脑，不会随 Key 发出去
-
-建议启动前设置管理员密码：
-
-```bat
-set ADMIN_PASSWORD=你自己的管理密码
-start.bat
-```
+- 停用或删除后立即失效
 
 ## 环境设置（可选代理）
 
 默认 **直连** Cursor，不强制走任何本地端口。
 
-如果你所在网络访问部分模型会报地区不可用（例如 `not supported in your region`），需要自己准备一条可用的代理线路，并把地址写进环境变量。  
-**端口、协议以你本机代理软件为准**，不要照抄别人的端口。
-
-先在代理软件里确认：
-
-- 协议：HTTP 或 SOCKS5
-- 本机监听地址和端口（例如 `127.0.0.1:xxxx`）
-
-再在启动本程序前设置：
+如果部分模型报地区不可用（例如 `not supported in your region`），需要自己准备代理，并把地址写进环境变量。  
+**端口、协议以你本机代理软件为准。**
 
 **Windows cmd：**
 
@@ -150,12 +159,13 @@ SOCKS5 示例：`socks5h://127.0.0.1:你的端口`。
 
 ## 用域名给别人用（本机 + Cloudflare）
 
-服务继续跑在这台 Windows 上。域名解析到本机用 Cloudflare Tunnel，不用开路由器端口。
+服务继续跑在你的电脑上。用 Cloudflare Tunnel 把子域名指到本机，不用开路由器端口。
 
 1. 域名放到 Cloudflare
 2. 安装 [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
-3. 登录：`cloudflared tunnel login`
-4. 创建隧道并绑子域名，例如 `api.你的域名` → `http://127.0.0.1:3000`
+3. `cloudflared tunnel login`，在网页里点选你的域名
+4. 创建隧道，把 `api.你的域名` 指到 `http://127.0.0.1:3000`
+5. 电脑上同时保持：API 服务 + cloudflared 隧道
 
 别人只填：
 
@@ -170,7 +180,7 @@ API Key:  你在管理页生成的 Key
 bun run dist/cli.js login     # 浏览器登录 Cursor
 bun run dist/cli.js logout    # 清除本机凭证
 bun run dist/cli.js whoami    # 查看登录状态
-bun run dist/cli.js models    # 列出账号可用模型
+bun run dist/cli.js models    # 列出账号可用模型（同样需要先 login）
 bun run dist/cli.js serve     # 启动服务，默认端口 3000
 ```
 
@@ -178,6 +188,7 @@ bun run dist/cli.js serve     # 启动服务，默认端口 3000
 
 接口：
 
+- `GET  /admin`  管理页
 - `GET  /v1/models`
 - `POST /v1/chat/completions`
 
@@ -187,7 +198,7 @@ bun run dist/cli.js serve     # 启动服务，默认端口 3000
 
 - **地区限制**：部分供应商在部分地区不可用。自行配置 `HTTPS_PROXY` 换出口后再试。
 - **Fable 5**：首次使用需在 Cursor 客户端 Settings → Models 确认数据保留政策。
-- **额度**：以你的 Cursor 套餐为准。
+- **额度**：以你的 Cursor 套餐为准。Key 次数额度是本程序额外加的访问控制。
 
 ## 开发
 
