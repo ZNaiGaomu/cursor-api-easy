@@ -26,7 +26,7 @@ if [[ -n "${HTTPS_PROXY:-${HTTP_PROXY:-}}" ]]; then
   echo "Cursor egress via ${HTTPS_PROXY:-$HTTP_PROXY}"
 else
   echo "Cursor egress: direct"
-  echo "If Claude/GPT/Gemini fail with a region error, set HTTPS_PROXY first."
-  echo "Example: export HTTPS_PROXY=http://127.0.0.1:7890"
+  echo "If some models fail with a region error, set HTTPS_PROXY to YOUR local proxy."
+  echo "Example: export HTTPS_PROXY=http://127.0.0.1:你的端口"
 fi
 exec bun run dist/cli.js serve

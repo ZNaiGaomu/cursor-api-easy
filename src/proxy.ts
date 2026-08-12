@@ -591,7 +591,7 @@ function explainCursorPolicyError(message: string): string {
     );
   }
   if (/not supported in your region/i.test(message)) {
-    return `${message} If you are in a restricted region, set HTTPS_PROXY to a non-China egress (for example http://127.0.0.1:7890).`;
+    return `${message} If you are in a restricted region, set HTTPS_PROXY to your own local proxy (http://127.0.0.1:你的端口).`;
   }
   return message;
 }

@@ -1,11 +1,18 @@
 # cursor-api-easy
 
 把 Cursor 账号里的模型，变成本地 OpenAI 兼容接口。  
-登录你自己的 Cursor 后，就能在任意支持自定义 OpenAI 接口的客户端里用。
+登录你自己的 Cursor 后，就能在任意支持自定义 OpenAI 接口的客户端里使用。
 
-基于 [egoist/cursor-openai-api](https://github.com/egoist/cursor-openai-api)（MIT）改进，增加 Windows 支持、完整模型发现、会话 blob 修复，以及可选的本地代理出口。
+## 功能
 
-## 别人怎么用
+- 浏览器 OAuth 登录自己的 Cursor 账号
+- 本地 `OpenAI Chat Completions` 兼容接口
+- 自动拉取账号可用模型列表
+- 支持流式输出与工具调用
+- Windows / macOS / Linux
+- 可选本地代理出口（需自行配置）
+
+## 使用方法
 
 ### 1. 环境
 
@@ -74,39 +81,46 @@ const client = new OpenAI({
 })
 ```
 
-## 可选：网络代理
+## 环境设置（可选代理）
 
-默认 **直连** Cursor。  
-若 Claude / GPT / Gemini 报 `not supported in your region`，说明当前出口 IP 被 Cursor 按地区限制，需要走非受限线路。
+默认 **直连** Cursor，不强制走任何本地端口。
 
-启动前设置环境变量（示例端口按你自己的代理软件改）：
+如果你所在网络访问部分模型会报地区不可用（例如 `not supported in your region`），需要自己准备一条可用的代理线路，并把地址写进环境变量。  
+**端口、协议以你本机代理软件为准**，不要照抄别人的端口。
+
+先在代理软件里确认：
+
+- 协议：HTTP 或 SOCKS5
+- 本机监听地址和端口（例如 `127.0.0.1:xxxx`）
+
+再在启动本程序前设置：
 
 **Windows cmd：**
 
 ```bat
-set HTTPS_PROXY=http://127.0.0.1:7890
-set HTTP_PROXY=http://127.0.0.1:7890
+set HTTPS_PROXY=http://127.0.0.1:你的端口
+set HTTP_PROXY=http://127.0.0.1:你的端口
 start.bat
 ```
 
 **PowerShell：**
 
 ```powershell
-$env:HTTPS_PROXY="http://127.0.0.1:7890"
-$env:HTTP_PROXY="http://127.0.0.1:7890"
+$env:HTTPS_PROXY="http://127.0.0.1:你的端口"
+$env:HTTP_PROXY="http://127.0.0.1:你的端口"
 .\start.bat
 ```
 
 **bash：**
 
 ```bash
-export HTTPS_PROXY=http://127.0.0.1:7890
-export HTTP_PROXY=http://127.0.0.1:7890
+export HTTPS_PROXY=http://127.0.0.1:你的端口
+export HTTP_PROXY=http://127.0.0.1:你的端口
 ./start.sh
 ```
 
-也支持 `socks5h://127.0.0.1:7890`。  
-未设置时不会强制走任何本地端口。
+SOCKS5 示例：`socks5h://127.0.0.1:你的端口`。  
+未设置 `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` 时一律直连。
 
 ## 命令
 
@@ -115,7 +129,7 @@ bun run dist/cli.js login     # 浏览器登录 Cursor
 bun run dist/cli.js logout    # 清除本机凭证
 bun run dist/cli.js whoami    # 查看登录状态
 bun run dist/cli.js models    # 列出账号可用模型
-bun run dist/cli.js serve     # 启动代理，默认端口 3000
+bun run dist/cli.js serve     # 启动服务，默认端口 3000
 ```
 
 端口也可用 `PORT=8080`。
@@ -129,7 +143,7 @@ bun run dist/cli.js serve     # 启动代理，默认端口 3000
 
 这些来自 Cursor 账号 / 地区政策，不是本程序漏模型：
 
-- **地区限制**：部分供应商（Anthropic / OpenAI / Google）在部分地区不可用。设 `HTTPS_PROXY` 换出口后再试。
+- **地区限制**：部分供应商在部分地区不可用。自行配置 `HTTPS_PROXY` 换出口后再试。
 - **Fable 5**：首次使用需在 Cursor 客户端 Settings → Models 确认数据保留政策。
 - **额度**：以你的 Cursor 套餐为准。
 
@@ -143,5 +157,4 @@ bun run build
 
 ## 许可
 
-MIT。原作者 Copyright (c) 2026 EGOIST，见 `LICENSE`。  
-本仓库在其基础上修改并重新发布。
+MIT，见 `LICENSE`。

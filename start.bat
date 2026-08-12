@@ -32,7 +32,7 @@ if defined HTTPS_PROXY (
   echo Cursor egress via %HTTP_PROXY%
 ) else (
   echo Cursor egress: direct
-  echo If Claude/GPT/Gemini fail with a region error, set HTTPS_PROXY first.
-  echo Example: set HTTPS_PROXY=http://127.0.0.1:7890
+  echo If some models fail with a region error, set HTTPS_PROXY to YOUR local proxy.
+  echo Example: set HTTPS_PROXY=http://127.0.0.1:你的端口
 )
 bun run dist\cli.js serve

@@ -31,7 +31,7 @@ function parseProxy(proxyUrl: string): { host: string; port: number; kind: "http
   }
   if (protocol !== "http" && protocol !== "https") {
     throw new Error(
-      `Unsupported proxy protocol ${parsed.protocol}. Use http://127.0.0.1:7890 or socks5h://127.0.0.1:7890`,
+      `Unsupported proxy protocol ${parsed.protocol}. Use http://127.0.0.1:PORT or socks5h://127.0.0.1:PORT`,
     );
   }
   return {
