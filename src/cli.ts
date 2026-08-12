@@ -8,6 +8,7 @@ import { startProxy, stopProxy, getProxyPort } from "./proxy";
 import { getCursorModels } from "./models";
 import { getTokenExpiry } from "./auth";
 import { getOptionalProxyUrl } from "./proxy-fetch";
+import { ensureAdminConfigured } from "./admin";
 
 const PROXY_PORT = 3000;
 
@@ -79,9 +80,19 @@ async function cmdServe(port: number) {
     process.exit(1);
   }
 
+  const generatedAdmin = ensureAdminConfigured();
+
   console.log(`🚀 Starting Cursor OpenAI API proxy on port ${port}...`);
-  console.log(`   Endpoint: http://localhost:${port}/v1`);
-  console.log(`   Models: http://localhost:${port}/v1/models`);
+  console.log(`   Endpoint: http://0.0.0.0:${port}/v1`);
+  console.log(`   Admin:    http://localhost:${port}/admin`);
+  console.log(`   Models:   http://localhost:${port}/v1/models`);
+  if (generatedAdmin) {
+    console.log(`   Admin password (save this): ${generatedAdmin}`);
+  } else if (process.env.ADMIN_PASSWORD) {
+    console.log("   Admin password: from ADMIN_PASSWORD");
+  } else {
+    console.log("   Admin password: already configured on this machine");
+  }
   const egress = getOptionalProxyUrl();
   console.log(
     egress
@@ -92,7 +103,8 @@ async function cmdServe(port: number) {
 
   const proxyPort = await startProxy(async () => creds.access, port);
 
-  console.log(`✅ Server running at http://localhost:${proxyPort}\n`);
+  console.log(`✅ Server running at http://localhost:${proxyPort}`);
+  console.log(`   Open admin UI: http://localhost:${proxyPort}/admin\n`);
 
   process.on("SIGINT", () => {
     console.log("\n\n👋 Shutting down...");

@@ -15,6 +15,8 @@
  */
 import { create, fromBinary, fromJson, type JsonValue, toBinary, toJson } from "@bufbuild/protobuf";
 import { getCursorModels } from "./models";
+import { handleAdminRequest, protectApiRequest } from "./admin";
+import { touchApiKey } from "./api-keys";
 import { ValueSchema } from "@bufbuild/protobuf/wkt";
 import {
   AgentClientMessageSchema,
@@ -250,11 +252,33 @@ export async function startProxy(
 
   proxyServer = Bun.serve({
     port,
+    hostname: "0.0.0.0",
     idleTimeout: 255, // max — Cursor responses can take 30s+
     async fetch(req) {
       const url = new URL(req.url);
 
+      if (req.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, x-admin-password",
+            "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+          },
+        });
+      }
+
+      const admin = await handleAdminRequest(req, url);
+      if (admin) return admin;
+
+      if (req.method === "GET" && url.pathname === "/") {
+        return Response.redirect("/admin", 302);
+      }
+
       if (req.method === "GET" && url.pathname === "/v1/models") {
+        const auth = protectApiRequest(req);
+        if (!auth.ok) return auth.response;
+        touchApiKey(auth.key.id);
         const accessToken = await getAccessToken();
         const cursorModels = await getCursorModels(accessToken);
         const openAIModels = cursorModels.map((m) => ({
@@ -268,13 +292,21 @@ export async function startProxy(
         }));
         return new Response(
           JSON.stringify({ object: "list", data: openAIModels }),
-          { headers: { "Content-Type": "application/json" } },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          },
         );
       }
 
       if (req.method === "POST" && url.pathname === "/v1/chat/completions") {
+        const auth = protectApiRequest(req);
+        if (!auth.ok) return auth.response;
         try {
           const body = (await req.json()) as ChatCompletionRequest;
+          touchApiKey(auth.key.id);
           const accessToken = await getAccessToken();
           return handleChatCompletion(body, accessToken);
         } catch (err) {

@@ -24,8 +24,12 @@ if errorlevel 1 (
 )
 
 if not defined PORT set PORT=3000
+if not defined ADMIN_PASSWORD (
+  echo ADMIN_PASSWORD is not set. The server will generate one on first run.
+)
 echo.
 echo Starting server on http://localhost:%PORT%/v1
+echo Admin UI: http://localhost:%PORT%/admin
 if defined HTTPS_PROXY (
   echo Cursor egress via %HTTPS_PROXY%
 ) else if defined HTTP_PROXY (

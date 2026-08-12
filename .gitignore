@@ -4,6 +4,7 @@ dist/
 .env
 .env.*
 *.local
+admin-password.txt
 start.local.bat
 start.local.sh
 available-models.json

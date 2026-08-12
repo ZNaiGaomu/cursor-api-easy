@@ -2,8 +2,7 @@
  * Cursor OAuth authentication for standalone CLI.
  * Handles PKCE-based login, polling, token refresh, and file-based storage.
  */
-import { mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
-import { homedir } from "node:os";
+import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { exec } from "node:child_process";
 import {
@@ -13,19 +12,9 @@ import {
   getTokenExpiry,
   type CursorCredentials,
 } from "./auth";
+import { ensureConfigDir } from "./paths";
 
-const CONFIG_DIR = join(
-  process.env.HOME || process.env.USERPROFILE || homedir(),
-  ".config",
-  "cursor-openai-api",
-);
-const CREDENTIALS_FILE = join(CONFIG_DIR, "credentials.json");
-
-function ensureConfigDir() {
-  try {
-    mkdirSync(CONFIG_DIR, { recursive: true });
-  } catch {}
-}
+const CREDENTIALS_FILE = () => join(ensureConfigDir(), "credentials.json");
 
 export interface StoredCredentials {
   access: string;
@@ -36,7 +25,7 @@ export interface StoredCredentials {
 export function getStoredCredentials(): StoredCredentials | null {
   try {
     ensureConfigDir();
-    const data = readFileSync(CREDENTIALS_FILE, "utf-8");
+    const data = readFileSync(CREDENTIALS_FILE(), "utf-8");
     const creds = JSON.parse(data) as StoredCredentials;
     if (!creds.access || !creds.refresh || !creds.expires) {
       return null;
@@ -50,7 +39,7 @@ export function getStoredCredentials(): StoredCredentials | null {
 export function saveCredentials(creds: CursorCredentials): void {
   ensureConfigDir();
   writeFileSync(
-    CREDENTIALS_FILE,
+    CREDENTIALS_FILE(),
     JSON.stringify({
       access: creds.access,
       refresh: creds.refresh,
@@ -61,7 +50,7 @@ export function saveCredentials(creds: CursorCredentials): void {
 
 export function clearCredentials(): void {
   try {
-    unlinkSync(CREDENTIALS_FILE);
+    unlinkSync(CREDENTIALS_FILE());
   } catch {}
 }
 

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>cursor-api-easy 管理</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --line: #2a3140;
+      --text: #e8edf5;
+      --muted: #93a0b5;
+      --accent: #6ea8fe;
+      --ok: #3dd68c;
+      --bad: #ff6b6b;
+      --warn: #f5c16c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1b2740 0%, var(--bg) 45%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    .sub { color: var(--muted); margin-bottom: 24px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%;
+      background: #10131a;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #081018;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+    button.danger { background: #5a1f27; color: #ffd5d8; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 180px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+    .on { background: #143325; color: var(--ok); }
+    .off { background: #3a1a1a; color: var(--bad); }
+    .mono { font-family: ui-monospace, Consolas, monospace; }
+    .hidden { display: none; }
+    .flash { padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; }
+    .flash.ok { background: #143325; color: var(--ok); }
+    .flash.err { background: #3a1a1a; color: var(--bad); }
+    .flash.warn { background: #3a2d14; color: var(--warn); }
+    .secret {
+      background: #10131a;
+      border: 1px dashed var(--accent);
+      padding: 12px;
+      border-radius: 12px;
+      word-break: break-all;
+    }
+    .actions button { margin: 0 6px 6px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>cursor-api-easy 管理台</h1>
+    <p class="sub">统一 URL，多把 API Key。没有你发放的 Key，无法调用接口。</p>
+
+    <div id="login-card" class="card">
+      <h2>管理员登录</h2>
+      <p class="sub">密码来自环境变量 <span class="mono">ADMIN_PASSWORD</span>，或首次启动时写入本机的管理员密码。</p>
+      <label>管理员密码</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <div style="height:12px"></div>
+      <button id="login-btn">进入管理台</button>
+      <div id="login-msg"></div>
+    </div>
+
+    <div id="app" class="hidden">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="sub">对外 API</div>
+            <div class="mono" id="api-url">/v1</div>
+          </div>
+          <div>
+            <div class="sub">管理页</div>
+            <div class="mono">/admin</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>新建 Key</h2>
+        <div class="row">
+          <div>
+            <label>名称</label>
+            <input id="name" placeholder="例如：张三 / 测试机" />
+          </div>
+          <div>
+            <label>额度上限（次数，可空 = 不限额）</label>
+            <input id="limit" type="number" min="1" placeholder="留空表示不限额" />
+          </div>
+          <div>
+            <label>过期时间（可选）</label>
+            <input id="expires" type="datetime-local" />
+          </div>
+        </div>
+        <div style="height:12px"></div>
+        <label>备注</label>
+        <textarea id="note" placeholder="可选"></textarea>
+        <div style="height:12px"></div>
+        <button id="create-btn">生成 Key</button>
+        <div id="create-msg"></div>
+      </div>
+
+      <div class="card">
+        <h2>Key 列表</h2>
+        <div id="list-msg"></div>
+        <div style="overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>状态</th>
+                <th>Key</th>
+                <th>用量</th>
+                <th>过期</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const state = { password: "" };
+
+    function $(id) { return document.getElementById(id); }
+    function flash(el, type, html) {
+      el.innerHTML = html ? `<div class="flash ${type}">${html}</div>` : "";
+    }
+    function fmtTime(ts) {
+      if (!ts) return "—";
+      return new Date(ts).toLocaleString();
+    }
+    async function api(path, opts = {}) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+      if (state.password) headers["x-admin-password"] = state.password;
+      const res = await fetch(path, Object.assign({}, opts, { headers }));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || res.statusText);
+      return data;
+    }
+
+    $("login-btn").onclick = async () => {
+      state.password = $("password").value.trim();
+      try {
+        await api("/admin/api/keys");
+        $("login-card").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        $("api-url").textContent = location.origin + "/v1";
+        await refresh();
+      } catch (err) {
+        flash($("login-msg"), "err", err.message);
+      }
+    };
+
+    $("create-btn").onclick = async () => {
+      const name = $("name").value.trim();
+      const limitRaw = $("limit").value.trim();
+      const expiresRaw = $("expires").value;
+      const note = $("note").value.trim();
+      try {
+        const payload = {
+          name,
+          requestLimit: limitRaw ? Number(limitRaw) : null,
+          expiresAt: expiresRaw ? new Date(expiresRaw).getTime() : null,
+          note,
+        };
+        const data = await api("/admin/api/keys", { method: "POST", body: JSON.stringify(payload) });
+        flash($("create-msg"), "ok",
+          `已创建。完整 Key 只显示这一次，请立刻复制发给使用者：<div class="secret mono">${data.key}</div>`);
+        $("name").value = "";
+        $("limit").value = "";
+        $("note").value = "";
+        await refresh();
+      } catch (err) {
+        flash($("create-msg"), "err", err.message);
+      }
+    };
+
+    async function patch(id, body) {
+      await api("/admin/api/keys/" + id, { method: "PATCH", body: JSON.stringify(body) });
+      await refresh();
+    }
+
+    async function removeKey(id) {
+      if (!confirm("确定删除这把 Key？删除后立即失效。")) return;
+      await api("/admin/api/keys/" + id, { method: "DELETE" });
+      await refresh();
+    }
+
+    async function refresh() {
+      const data = await api("/admin/api/keys");
+      const rows = $("rows");
+      rows.innerHTML = "";
+      if (!data.keys.length) {
+        flash($("list-msg"), "warn", "还没有 Key。先在上面生成一把。");
+        return;
+      }
+      flash($("list-msg"), "", "");
+      for (const key of data.keys) {
+        const tr = document.createElement("tr");
+        const quota = key.requestLimit == null
+          ? `${key.requestCount} / 不限额`
+          : `${key.requestCount} / ${key.requestLimit}（剩 ${key.remaining}）`;
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(key.name)}</strong><div class="sub">${escapeHtml(key.note || "")}</div></td>
+          <td><span class="tag ${key.enabled ? "on" : "off"}">${key.enabled ? "启用" : "停用"}</span></td>
+          <td class="mono">sk-…${escapeHtml(key.suffix)}</td>
+          <td>${quota}<div class="sub">最近：${fmtTime(key.lastUsedAt)}</div></td>
+          <td>${fmtTime(key.expiresAt)}</td>
+          <td class="actions"></td>
+        `;
+        const actions = tr.querySelector(".actions");
+        const toggle = document.createElement("button");
+        toggle.className = "ghost";
+        toggle.textContent = key.enabled ? "停用" : "启用";
+        toggle.onclick = () => patch(key.id, { enabled: !key.enabled });
+        const quotaBtn = document.createElement("button");
+        quotaBtn.className = "ghost";
+        quotaBtn.textContent = "改额度";
+        quotaBtn.onclick = () => {
+          const value = prompt("输入次数上限，留空或不填数字表示不限额", key.requestLimit ?? "");
+          if (value === null) return;
+          const n = value.trim() === "" ? null : Number(value);
+          patch(key.id, { requestLimit: Number.isFinite(n) ? n : null });
+        };
+        const del = document.createElement("button");
+        del.className = "danger";
+        del.textContent = "删除";
+        del.onclick = () => removeKey(key.id);
+        actions.append(toggle, quotaBtn, del);
+        rows.appendChild(tr);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+  </script>
+</body>
+</html>

@@ -22,6 +22,7 @@ fi
 export PORT="${PORT:-3000}"
 echo
 echo "Starting server on http://localhost:${PORT}/v1"
+echo "Admin UI: http://localhost:${PORT}/admin"
 if [[ -n "${HTTPS_PROXY:-${HTTP_PROXY:-}}" ]]; then
   echo "Cursor egress via ${HTTPS_PROXY:-$HTTP_PROXY}"
 else

@@ -9,6 +9,8 @@
 - 本地 `OpenAI Chat Completions` 兼容接口
 - 自动拉取账号可用模型列表
 - 支持流式输出与工具调用
+- 多把可管理 API Key，统一 URL
+- 浏览器管理页：创建 / 停用 / 删除 Key，可选额度
 - Windows / macOS / Linux
 - 可选本地代理出口（需自行配置）
 
@@ -65,20 +67,44 @@ chmod +x start.sh
 默认地址：
 
 ```text
+管理页:    http://localhost:3000/admin
 Base URL:  http://localhost:3000/v1
-API Key:   任意非空字符串，例如 cursor
+API Key:   在管理页生成后发给使用者，不再接受任意字符串
 ```
 
-客户端（ChatBox、LobeChat、Codex++、OpenAI SDK 等）填上面两项即可。  
+第一次启动若未设置 `ADMIN_PASSWORD`，程序会生成管理员密码并打印在终端。  
+打开管理页，用该密码登录，再创建 Key。完整 Key 只显示一次。
+
+客户端（ChatBox、LobeChat、Codex++、OpenAI SDK 等）填：
+
+```text
+Base URL: https://你的子域名/v1   （本机测试用 http://localhost:3000/v1）
+API Key:  你发放的 sk-...
+```
+
 API 格式请选 **OpenAI Chat Completions**，不要选 Responses API / Anthropic。
 
 ```javascript
 import OpenAI from "openai"
 
 const client = new OpenAI({
-  apiKey: "cursor",
+  apiKey: "sk-你发给对方的key",
   baseURL: "http://localhost:3000/v1",
 })
+```
+
+## Key 与额度
+
+- 每把 Key 可单独启用 / 停用 / 删除
+- 额度可选：不填 = 不限额；填写次数后用尽即拒绝
+- 可设置过期时间
+- Cursor 登录凭证只留在你这台电脑，不会随 Key 发出去
+
+建议启动前设置管理员密码：
+
+```bat
+set ADMIN_PASSWORD=你自己的管理密码
+start.bat
 ```
 
 ## 环境设置（可选代理）
@@ -121,6 +147,22 @@ export HTTP_PROXY=http://127.0.0.1:你的端口
 
 SOCKS5 示例：`socks5h://127.0.0.1:你的端口`。  
 未设置 `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` 时一律直连。
+
+## 用域名给别人用（本机 + Cloudflare）
+
+服务继续跑在这台 Windows 上。域名解析到本机用 Cloudflare Tunnel，不用开路由器端口。
+
+1. 域名放到 Cloudflare
+2. 安装 [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
+3. 登录：`cloudflared tunnel login`
+4. 创建隧道并绑子域名，例如 `api.你的域名` → `http://127.0.0.1:3000`
+
+别人只填：
+
+```text
+Base URL: https://api.你的域名/v1
+API Key:  你在管理页生成的 Key
+```
 
 ## 命令
 
